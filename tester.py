@@ -38,10 +38,24 @@ if __name__ == "__main__":
         type=str,
         required=True,
     )
+    parser.add_argument(
+        "--save-chunks-file",
+        type=str,
+        help="Path to save chunks to. Each line is a JSON object corresponding to one question.",
+    )
+    parser.add_argument(
+        "--query-override-file",
+        type=str,
+        help="Path to a file containing a list of queries to override the ones in the dataset with. Queries should be separated by newlines.",
+    )
     args = parser.parse_args()
 
     freak = FREAK(
         comparison_fn=call_my_code,
         cohere_api_key=args.cohere_api_key,
     )
-    freak.run(args.verbose)
+    freak.run(
+        verbose=args.verbose,
+        save_chunks_file=args.save_chunks_file,
+        query_override_file=args.query_override_file,
+    )

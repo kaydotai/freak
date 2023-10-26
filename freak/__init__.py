@@ -208,7 +208,10 @@ class FREAK:
 
     def run(
         self,
+        *,
         verbose: bool = False,
+        save_chunks_file: Optional[str] = None,
+        query_override_file: Optional[str] = None,
     ):
         async def call_with_time(
             fn, query: str, metadata: InputMetadata
@@ -223,6 +226,11 @@ class FREAK:
 
         # Read some input (a query + relevant metadata)
         tests = DEFAULT_QUESTIONS
+        if query_override_file is not None:
+            with open(query_override_file, "r") as f:
+                tests = [
+                    (query, InputMetadata()) for query in f.read().split("\n") if query
+                ]
 
         for query, metadata in tests:
             print(f"{TermColor.BOLD}{TermColor.UNDERLINE}{query}{TermColor.ENDC}")
@@ -232,6 +240,22 @@ class FREAK:
             alternative_result, alternative_external_time = asyncio.run(
                 call_with_time(self.__comparison_fn, query, metadata)
             )
+
+            # Save the chunks to a file before doing anything else.
+            if save_chunks_file is not None:
+                with open(save_chunks_file, "a") as f:
+                    f.write(
+                        json.dumps(
+                            {
+                                "query": query,
+                                "kay_result": kay_result.model_dump(mode="json"),
+                                "alternative_result": alternative_result.model_dump(mode="json"),
+                            },
+                            sort_keys=True,
+                            default=str,
+                        )
+                        + "\n"
+                    )
 
             # Let's add some objective measurement.
             kay_external_relevancy = self._external_relevancy_evaluation(
