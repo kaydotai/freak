@@ -194,15 +194,18 @@ DEFAULT_QUESTIONS: List[str] = [
 
 class FREAK:
     __comparison_fn: ComparisonFn
-    __cohere_api_key: Optional[str]
+    __kay_api_key: str
+    __cohere_api_key: str
 
     def __init__(
         self,
         *,
         comparison_fn: ComparisonFn,
-        cohere_api_key: Optional[str] = None,
+        cohere_api_key: str,
+        kay_api_key: str,
     ):
         self.__comparison_fn = comparison_fn
+        self.__kay_api_key = kay_api_key
         # TODO custom evaluation fn in case not using cohere
         self.__cohere_api_key = cohere_api_key
 
@@ -249,7 +252,9 @@ class FREAK:
                             {
                                 "query": query,
                                 "kay_result": kay_result.model_dump(mode="json"),
-                                "alternative_result": alternative_result.model_dump(mode="json"),
+                                "alternative_result": alternative_result.model_dump(
+                                    mode="json"
+                                ),
                             },
                             sort_keys=True,
                             default=str,
@@ -416,8 +421,7 @@ class FREAK:
                 f"{TermColor.BOLD}Reasoning steps that Kay took:{TermColor.ENDC} {reasoning_steps_text}"
             )
 
-    @staticmethod
-    async def kay_call(query: str, metadata: InputMetadata) -> RagResult:
+    async def kay_call(self, query: str, metadata: InputMetadata) -> RagResult:
         async with httpx.AsyncClient(timeout=20) as client:
             # TODO: we should handle timeouts from both sides
             response = await client.post(
@@ -433,7 +437,7 @@ class FREAK:
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
-                    "Api-Key": "KSbEneM3bs",
+                    "Api-Key": self.__kay_api_key,
                 },
             )
             response.raise_for_status()
