@@ -14,8 +14,7 @@ from pydantic.dataclasses import dataclass
 from kay.rag.retrievers import KayRetriever
 
 
-# KAY_API_URL = "https://api.kay.ai"
-KAY_API_URL = "https://embedding-backend-pr-76.onrender.com"
+KAY_API_URL = "https://api.kay.ai"
 
 
 class TermColor:
