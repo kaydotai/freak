@@ -9,9 +9,11 @@ FREAK aims to provide an evaluation framework for running analyses against Kay's
 
 1.  In `tester.py` fill out the `call_my_code` function with a call to your API. Convert the response into a `RagResult`. (more details below)
 2. Get a `cohere` API key (if you don't have one, you can create one here - [cohere signup](https://cohere.com/))
-3. Run  `python tester.py [--verbose] --cohere-api-key <YOUR_API_KEY_HERE>`
+3. Run  `python tester.py [--verbose] --cohere-api-key <YOUR_COHERE_API_KEY_HERE> --kay-api-key <YOUR_KAY_API_KEY_HERE>`
 
-If you want to add custom queries, add them `__init__.py` `DEFAULT_QUESTIONS`
+For a full breakdown of the command line flags available, run `python tester.py --help`.
+
+If you want to add custom queries, use the `--queries-override-file` flag.
 
 ## Detailed Usage
 
