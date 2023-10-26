@@ -194,21 +194,27 @@ DEFAULT_QUESTIONS: List[str] = [
 
 class FREAK:
     __comparison_fn: ComparisonFn
-    __cohere_api_key: Optional[str]
+    __kay_api_key: str
+    __cohere_api_key: str
 
     def __init__(
         self,
         *,
         comparison_fn: ComparisonFn,
-        cohere_api_key: Optional[str] = None,
+        cohere_api_key: str,
+        kay_api_key: str,
     ):
         self.__comparison_fn = comparison_fn
+        self.__kay_api_key = kay_api_key
         # TODO custom evaluation fn in case not using cohere
         self.__cohere_api_key = cohere_api_key
 
     def run(
         self,
+        *,
         verbose: bool = False,
+        save_chunks_file: Optional[str] = None,
+        query_override_file: Optional[str] = None,
     ):
         async def call_with_time(
             fn, query: str, metadata: InputMetadata
@@ -223,6 +229,11 @@ class FREAK:
 
         # Read some input (a query + relevant metadata)
         tests = DEFAULT_QUESTIONS
+        if query_override_file is not None:
+            with open(query_override_file, "r") as f:
+                tests = [
+                    (query, InputMetadata()) for query in f.read().split("\n") if query
+                ]
 
         for query, metadata in tests:
             print(f"{TermColor.BOLD}{TermColor.UNDERLINE}{query}{TermColor.ENDC}")
@@ -232,6 +243,24 @@ class FREAK:
             alternative_result, alternative_external_time = asyncio.run(
                 call_with_time(self.__comparison_fn, query, metadata)
             )
+
+            # Save the chunks to a file before doing anything else.
+            if save_chunks_file is not None:
+                with open(save_chunks_file, "a") as f:
+                    f.write(
+                        json.dumps(
+                            {
+                                "query": query,
+                                "kay_result": kay_result.model_dump(mode="json"),
+                                "alternative_result": alternative_result.model_dump(
+                                    mode="json"
+                                ),
+                            },
+                            sort_keys=True,
+                            default=str,
+                        )
+                        + "\n"
+                    )
 
             # Let's add some objective measurement.
             kay_external_relevancy = self._external_relevancy_evaluation(
@@ -392,8 +421,7 @@ class FREAK:
                 f"{TermColor.BOLD}Reasoning steps that Kay took:{TermColor.ENDC} {reasoning_steps_text}"
             )
 
-    @staticmethod
-    async def kay_call(query: str, metadata: InputMetadata) -> RagResult:
+    async def kay_call(self, query: str, metadata: InputMetadata) -> RagResult:
         async with httpx.AsyncClient(timeout=20) as client:
             # TODO: we should handle timeouts from both sides
             response = await client.post(
@@ -409,7 +437,7 @@ class FREAK:
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
-                    "Api-Key": "KSbEneM3bs",
+                    "Api-Key": self.__kay_api_key,
                 },
             )
             response.raise_for_status()
